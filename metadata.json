@@ -1,0 +1,7 @@
+{
+  "name": "IOE K9 100 câu luyện nghe 2",
+  "description": "An educational listening practice game for IOE Grade 9 students with 100 new questions, audio playback, and interactive feedback.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

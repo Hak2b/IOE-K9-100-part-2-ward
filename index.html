@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IOE K9 - LUYỆN NGHE CẤP HUYỆN (100 CÂU)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+      body { font-family: 'Nunito', sans-serif; scroll-behavior: smooth; overflow-x: hidden; }
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+      
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+      
+      .btn-active:active { transform: scale(0.95); }
+      .answer-underline {
+        text-decoration-color: #fca5a5;
+        text-decoration-thickness: 4px;
+        text-underline-offset: 4px;
+      }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        const QuestionType = {
+            MC: 'MULTIPLE_CHOICE',
+            FIB: 'FILL_IN_BLANK'
+        };
+
+        // --- DỮ LIỆU 100 CÂU HỎI LỚP 9 VỚI NGHĨA TIẾNG VIỆT CỤ THỂ ---
+        const QUIZ_DATA = [
+            { id: 1, type: QuestionType.FIB, text: "They have _ _ _ _ _ _ from many different places around the world.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C7.mp3", answer: "plants", explain: "Plants: Thực vật/Cây cối.", translation: "các loại thực vật hoặc cây cối được sưu tầm từ nhiều nơi trên thế giới" },
+            { id: 2, type: QuestionType.MC, text: "She enjoys living in her _____ little town.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/96.mp3", options: ["asleep", "sleeping", "sleepless", "sleepy"], answer: "sleepy", explain: "Sleepy town: Thị trấn nhỏ yên tĩnh/vắng vẻ.", translation: "từ dùng để chỉ một thị trấn nhỏ vô cùng yên bình, tĩnh lặng và có phần vắng vẻ" },
+            { id: 3, type: QuestionType.MC, text: "Where is the man planning to go?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D1C14.mp3", options: ["He's going to New York.", "He's going to Tokyo.", "He's going to London.", "He's going to Singapore."], answer: "He's going to London.", explain: "The man plans to visit London.", translation: "tên của thủ đô nước Anh, nơi mà người đàn ông đang dự định sẽ đi tới" },
+            { id: 4, type: QuestionType.MC, text: "What is Michael's job?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C9.mp3", options: ["He is a teacher.", "He is a pilot.", "He is a farmer.", "He is a professional cyclist."], answer: "He is a professional cyclist.", explain: "Professional cyclist: Vận động viên xe đạp chuyên nghiệp.", translation: "công việc của một người đua xe đạp kiếm sống chuyên nghiệp" },
+            { id: 5, type: QuestionType.FIB, text: "_ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/flyover.mp3", answer: "flyover", explain: "Flyover: Cầu vượt.", translation: "một loại cầu được xây dựng để xe cộ đi vượt qua phía trên một con đường khác" },
+            { id: 6, type: QuestionType.MC, text: "The girl has never been able to remember __ easily.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D3C8.mp3", options: ["words", "recipes", "letters", "numbers"], answer: "numbers", explain: "She has trouble remembering numbers.", translation: "những con số (thứ mà cô gái này luôn cảm thấy khó khăn để ghi nhớ)" },
+            { id: 7, type: QuestionType.FIB, text: "_ _ _ _ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/noticeable.mp3", answer: "noticeable", explain: "Noticeable: Đáng chú ý/Dễ nhận thấy.", translation: "một đặc điểm gì đó rất nổi bật, rõ ràng và khiến người ta dễ dàng quan sát thấy" },
+            { id: 8, type: QuestionType.FIB, text: "_ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Trainghiem21-22/Lop9/quanhuyen/nghe/explore.mp3", answer: "explore", explain: "Explore: Khám phá/Thăm dò.", translation: "hành động đi thám hiểm hoặc tìm tòi về một vùng đất hoặc lĩnh vực mới" },
+            { id: 9, type: QuestionType.FIB, text: "I wish I could just have a _ _ _ _ _ and just move it with me wherever I go.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D2C1.mp3", answer: "house", explain: "House: Ngôi nhà.", translation: "ngôi nhà (mong ước có một nơi ở có thể di chuyển theo chủ nhân)" },
+            { id: 10, type: QuestionType.MC, text: "When does he usually go to Bat Trang?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/36.mp3", options: ["every day", "on weekdays", "every week", "at weekends"], answer: "at weekends", explain: "At weekends: Vào những ngày cuối tuần.", translation: "thời điểm rơi vào thứ Bảy và Chủ Nhật hàng tuần" },
+            { id: 11, type: QuestionType.MC, text: "They can see the rain coming in from the ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/112.mp3", options: ["west", "horizon", "sky", "outside"], answer: "west", explain: "West: Hướng Tây.", translation: "phía Tây (một trong bốn hướng chính, nơi mặt trời lặn)" },
+            { id: 12, type: QuestionType.MC, text: "What does the girl think about learning a different language?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D1C22.mp3", options: ["She thinks it's not necessary.", "She thinks it's fun.", "She thinks it's useful.", "She thinks it's important."], answer: "She thinks it's not necessary.", explain: "She feels learning another language isn't needed.", translation: "ý kiến cho rằng việc học ngoại ngữ là không thực sự quan trọng hoặc cần thiết" },
+            { id: 13, type: QuestionType.FIB, text: "The woman thinks the new sport center is big and _ _ _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D1C21.mp3", answer: "cheap", explain: "Cheap: Rẻ/Giá cả phải chăng.", translation: "mức giá thấp, không hề đắt đỏ của trung tâm thể thao mới" },
+            { id: 14, type: QuestionType.FIB, text: "If you eat this soup regularly, you can improve your eyesight and protect yourself from certain _ _ _ _ _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/31.mp3", answer: "cancers", explain: "Cancers: Các bệnh ung thư.", translation: "nhóm các căn bệnh ác tính mà món súp này có khả năng giúp ngăn ngừa" },
+            { id: 15, type: QuestionType.MC, text: "The children were always early, trying to get a place near the ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/106.mp3", options: ["screen", "scene", "seen", "coputer"], answer: "screen", explain: "Screen: Màn hình.", translation: "bề mặt hiển thị hình ảnh trong rạp chiếu phim mà trẻ em thích ngồi gần" },
+            { id: 16, type: QuestionType.MC, text: "There is a _____ near Nga's house.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/23.mp3", options: ["store", "supermarket", "market", "mall"], answer: "supermarket", explain: "Supermarket: Siêu thị.", translation: "một cửa hàng bán lẻ lớn bán thực phẩm và đồ gia dụng nằm gần nhà Nga" },
+            { id: 17, type: QuestionType.MC, text: "How's the boy's new desk like?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/51.mp3", options: ["It has four drawers.", "It only has shelves.", "It has two drawers and three shelves.", "It only has two drawers."], answer: "It has two drawers and three shelves.", explain: "Description of the desk's components.", translation: "cấu tạo chi tiết của bàn học gồm hai ngăn kéo và ba kệ sách" },
+            { id: 18, type: QuestionType.MC, text: "Why does the woman like Spain?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D3C17.mp3", options: ["Because she loves learning language.", "Because she loves the weather.", "Because everything is cheap.", "Because she likes adventures."], answer: "Because she loves learning language.", explain: "She enjoys language learning in Spain.", translation: "lý do vì người phụ nữ này đam mê việc nghiên cứu và học hỏi ngôn ngữ" },
+            { id: 19, type: QuestionType.MC, text: "I have told you many times not to _____ the door open.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/118.mp3", options: ["live", "love", "let", "leave"], answer: "leave", explain: "Leave open: Để cửa mở.", translation: "hành động cứ mặc kệ cho cửa mở mà không chịu đóng lại" },
+            { id: 20, type: QuestionType.MC, text: "How will they go back to school?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/30.mp3", options: ["By bus", "On foot", "By bike", "By car"], answer: "By bus", explain: "They use the bus to return.", translation: "phương tiện giao thông công cộng được họ sử dụng để quay về trường học" },
+
+            // Tiếp tục cập nhật nghĩa cụ thể cho 80 câu còn lại
+            { id: 21, type: QuestionType.MC, text: "What is this region _____ for?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/11.mp3", options: ["fame", "famous", "notable", "infamous"], answer: "famous", explain: "Famous for: Nổi tiếng vì...", translation: "tính từ dùng để hỏi về điều khiến một khu vực được nhiều người biết đến" },
+            { id: 22, type: QuestionType.FIB, text: "If I continue eating like this, I may become _ _ _ _ _ _ _ _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Trainghiem21-22/Lop9/quanhuyen/nghe/6.mp3", answer: "overweight", explain: "Overweight: Thừa cân.", translation: "tình trạng trọng lượng cơ thể vượt quá mức bình thường do ăn uống quá độ" },
+            { id: 23, type: QuestionType.FIB, text: "There's a lot of beautiful _ _ _ _ _ _ and also some nice cities.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D2C2.mp3", answer: "nature", explain: "Nature: Thiên nhiên.", translation: "tất cả những cảnh quan tự nhiên không do con người tạo ra" },
+            { id: 24, type: QuestionType.MC, text: "What is the second biggest killer?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D3C12.mp3", options: ["Air pollution", "Light pollution", "Water pollution", "Noise pollution"], answer: "Water pollution", explain: "Water pollution: Ô nhiễm nước.", translation: "tình trạng nguồn nước bị bẩn và độc hại gây chết người hàng loạt" },
+            { id: 25, type: QuestionType.FIB, text: "_ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/flyover.mp3", answer: "flyover", explain: "Flyover: Cầu vượt.", translation: "một công trình giao thông giúp tránh tắc đường bằng cách đi phía trên" },
+            { id: 26, type: QuestionType.MC, text: "He is fascinated by traditional ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/35.mp3", options: ["paintings", "handicrafts", "papers", "artisans"], answer: "handicrafts", explain: "Handicrafts: Đồ thủ công.", translation: "những sản phẩm được làm bằng tay một cách tỉ mỉ mang đậm tính nghệ thuật" },
+            { id: 27, type: QuestionType.MC, text: "How are they arranged?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/33.mp3", options: ["Basically", "Orderly", "Chronologically", "Randomly"], answer: "Chronologically", explain: "Chronologically: Theo trình tự thời gian.", translation: "cách sắp xếp các sự kiện hoặc vật dụng dựa trên thứ tự thời gian xảy ra" },
+            { id: 28, type: QuestionType.FIB, text: "_ _ _ _ _ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/compartment.mp3", answer: "compartment", explain: "Compartment: Ngăn.", translation: "một phần không gian được chia nhỏ ra để chứa đồ đạc riêng biệt" },
+            { id: 29, type: QuestionType.MC, text: "He asks her to wait for ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/69.mp3", options: ["two minutes", "a minute", "an hour", "a hour"], answer: "a minute", explain: "A minute: Một phút.", translation: "khoảng thời gian 60 giây ngắn ngủi mà nhân vật nam yêu cầu cô gái chờ đợi" },
+            { id: 30, type: QuestionType.FIB, text: "_ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Trainghiem21-22/Lop9/quanhuyen/nghe/garnish.mp3", answer: "garnish", explain: "Garnish: Trang trí món ăn.", translation: "việc sử dụng rau củ hoặc thảo mộc để tô điểm cho đĩa thức ăn thêm hấp dẫn" },
+            { id: 31, type: QuestionType.MC, text: "Sometimes he wishes he could _____ to that time.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/110.mp3", options: ["go forward", "go down", "go back", "go up"], answer: "go back", explain: "Go back: Quay lại.", translation: "hành động mong muốn được trở về một thời điểm nào đó trong quá khứ" },
+            { id: 32, type: QuestionType.MC, text: "His work makes him feel like he is living his _____ years again.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/82.mp3", options: ["adult", "baby", "teenage", "children"], answer: "teenage", explain: "Teenage: Tuổi thiếu niên.", translation: "quãng thời gian tươi đẹp của một người khi đang ở độ tuổi từ 13 đến 19" },
+            { id: 33, type: QuestionType.MC, text: "He takes time to think of the best _____ to give people.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/83.mp3", options: ["time", "hand", "advice", "solution"], answer: "advice", explain: "Advice: Lời khuyên.", translation: "những lời chỉ dẫn hữu ích mà một người dành cho người khác khi cần giúp đỡ" },
+            { id: 34, type: QuestionType.MC, text: "What does the girl think about learning a different language?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D1C22.mp3", options: ["She thinks it's important.", "She thinks it's not necessary.", "She thinks it's useful.", "She thinks it's fun."], answer: "She thinks it's not necessary.", explain: "Not necessary: Không cần thiết.", translation: "quan điểm của nhân vật nữ về việc học ngoại ngữ không phải là điều bắt buộc" },
+            { id: 35, type: QuestionType.MC, text: "She has been studying really hard to _____ her parents.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/77.mp3", options: ["dignify", "please", "satisfy", "upset"], answer: "satisfy", explain: "Satisfy: Làm thỏa lòng.", translation: "động từ chỉ việc nỗ lực đạt kết quả tốt để khiến cha mẹ cảm thấy tự hào" },
+            { id: 36, type: QuestionType.MC, text: "The children were always early, trying to get a place near the ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/106.mp3", options: ["coputer", "scene", "seen", "screen"], answer: "screen", explain: "Screen: Màn hình.", translation: "vật dụng trong rạp phim mà trẻ em luôn muốn ngồi sát bên để nhìn rõ" },
+            { id: 37, type: QuestionType.MC, text: "Who does this cinema attract?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/15.mp3", options: ["youngsters", "youngers", "old people", "children"], answer: "youngsters", explain: "Youngsters: Giới trẻ.", translation: "từ chỉ những người trẻ tuổi, thanh niên yêu thích phim ảnh" },
+            { id: 38, type: QuestionType.MC, text: "Only _____ people had the radio.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/108.mp3", options: ["bad", "wealthy", "poor", "good"], answer: "wealthy", explain: "Wealthy: Giàu có.", translation: "những người có rất nhiều tiền bạc và tài sản trong xã hội ngày xưa" },
+            { id: 40, type: QuestionType.MC, text: "The sky train and _____ are limited in range, and don't cover the whole city.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/59.mp3", options: ["underground", "metro", "bicycle", "public transport"], answer: "metro", explain: "Metro: Tàu điện ngầm.", translation: "một loại hình giao thông hiện đại chạy trong lòng đất của các đô thị lớn" },
+            { id: 41, type: QuestionType.MC, text: "Why isn't Mai coming?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/61.mp3", options: ["She hates us.", "Her parents makes her stay at home.", "She is too tired.", "She has to study."], answer: "She is too tired.", explain: "Tired: Mệt mỏi.", translation: "lý do sức khỏe khiến Mai không thể tham gia cuộc vui cùng bạn bè" },
+            { id: 42, type: QuestionType.MC, text: "The boy is _____ about the exam.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/72.mp3", options: ["anxious", "worried", "comfortable", "silly"], answer: "worried", explain: "Worried: Lo lắng.", translation: "cảm giác bất an và băn khoăn của cậu bé trước một kỳ thi quan trọng" },
+            { id: 43, type: QuestionType.FIB, text: "_ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Trainghiem21-22/Lop9/quanhuyen/nghe/garnish.mp3", answer: "garnish", explain: "Garnish: Trang trí.", translation: "hành động bày biện đĩa thức ăn với các loại rau hoa tỉa sẵn" },
+            { id: 45, type: QuestionType.FIB, text: "_ _ _ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/versatile.mp3", answer: "versatile", explain: "Versatile: Đa tài/Linh hoạt.", translation: "mô tả một người có nhiều tài lẻ hoặc một đồ vật có thể dùng vào nhiều việc" },
+            { id: 46, type: QuestionType.MC, text: "\"How's it going? Getting over the _____?\"", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/42.mp3", options: ["jet lag", "wet lag", "clock lag", "time lag"], answer: "jet lag", explain: "Jet lag: Say múi giờ.", translation: "triệu chứng mệt mỏi mất ngủ khi bay qua nhiều kinh tuyến khác nhau" },
+            { id: 47, type: QuestionType.FIB, text: "I’m still trying to decide about what _ _ _ _ _ _ _ I want to move to next.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C1.mp3", answer: "country", explain: "Country: Đất nước.", translation: "đơn vị hành chính cấp quốc gia mà một người muốn chuyển đến sống" },
+            { id: 48, type: QuestionType.FIB, text: "It won't rain until the _ _ _ _ ing.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C15.mp3", answer: "even", explain: "Evening: Buổi tối.", translation: "buổi tối (một phần của từ 'evening', chỉ thời điểm trời sẽ mưa)" },
+            { id: 49, type: QuestionType.FIB, text: "_ _ _ _ _ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Trainghiem21-22/Lop9/quanhuyen/nghe/sightseeing.mp3", answer: "sightseeing", explain: "Sightseeing: Ngắm cảnh.", translation: "hoạt động giải trí chính của khách du lịch khi đi ngắm các danh lam thắng cảnh" },
+            { id: 50, type: QuestionType.MC, text: "When did the speaker visit Nha Trang?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C10.mp3", options: ["In September", "In June", "In August", "In May"], answer: "In August", explain: "August: Tháng Tám.", translation: "tên của tháng thứ tám trong năm dương lịch" },
+            { id: 51, type: QuestionType.MC, text: "What fruit will the boy take?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D3C26.mp3", options: ["Apples", "Strawberries", "Grapes", "Oranges"], answer: "Grapes", explain: "Grapes: Nho.", translation: "một loại quả mọng mọc thành chùm, có thể dùng làm rượu" },
+            { id: 52, type: QuestionType.FIB, text: "tourists are treated with _ _ _ _ _ _ _ _ corn wine.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/33.mp3", answer: "homemade", explain: "Homemade: Tự làm.", translation: "đặc điểm của các món ăn hoặc thức uống được nấu thủ công tại gia đình" },
+            { id: 53, type: QuestionType.FIB, text: "They have problems with the _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D3C27.mp3", answer: "car", explain: "Car: Ô tô.", translation: "loại xe bốn bánh mà gia đình họ đang sử dụng gặp trục trặc" },
+            { id: 54, type: QuestionType.MC, text: "\"Can you come and give me _____?\"", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/49.mp3", options: ["a leg", "two hands", "a hand", "a finger"], answer: "a hand", explain: "Give a hand: Giúp đỡ.", translation: "cụm từ mang ý nghĩa nhờ ai đó giúp mình thực hiện một việc gì đó" },
+            { id: 55, type: QuestionType.MC, text: "What might Harry do if it rains on Saturday?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/36.mp3", options: ["He might stay at home.", "He might play badminton.", "He might go running.", "He might play volleyball."], answer: "He might play volleyball.", explain: "Volleyball: Bóng chuyền.", translation: "môn thể thao đồng đội thi đấu qua một tấm lưới cao" },
+            { id: 56, type: QuestionType.MC, text: "How long does it take her to get to work everyday?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/54.mp3", options: ["Three hours", "Thirty minutes", "Two hours", "Half an hour"], answer: "Two hours", explain: "Two hours: Hai tiếng.", translation: "tổng thời gian 120 phút mà cô ấy phải dành để đi đến cơ quan mỗi ngày" },
+            { id: 57, type: QuestionType.FIB, text: "People have salad for lunch and _ _ _ _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/48.mp3", answer: "supper", explain: "Supper: Bữa tối muộn.", translation: "bữa ăn diễn ra vào cuối ngày, thường nhẹ nhàng hơn bữa chính" },
+            { id: 58, type: QuestionType.MC, text: "The whole village used to listen to the news programme through a ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/109.mp3", options: ["radio", "television", "book", "loudspeaker"], answer: "loudspeaker", explain: "Loudspeaker: Loa phát thanh.", translation: "thiết bị âm thanh công cộng treo trên cao để cả làng cùng nghe tin tức" },
+            { id: 59, type: QuestionType.FIB, text: "The woman put the onion in the _ _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C29.mp3", answer: "oven", explain: "Oven: Lò nướng.", translation: "vật dụng trong bếp dùng để làm chín thức ăn bằng nhiệt độ cao bên trong" },
+            { id: 60, type: QuestionType.MC, text: "Why did they both sleep badly?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/58.mp3", options: ["Because their mother played music.", "Because their father went home late.", "Because of the heating.", "Because they had to prepare for the camping."], answer: "Because of the heating.", explain: "Heating: Hệ thống sưởi.", translation: "nguyên nhân do hệ thống sưởi trong phòng quá nóng hoặc gặp trục trặc" },
+            { id: 61, type: QuestionType.MC, text: "Which is now the world's biggest killer?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C12.mp3", options: ["Road accidents", "Crime", "Pollution", "Disease"], answer: "Pollution", explain: "Pollution: Ô nhiễm.", translation: "vấn đề nhức nhối toàn cầu khi môi trường bị nhiễm bẩn gây chết người" },
+            { id: 63, type: QuestionType.FIB, text: "I'm blogging from a busy _ _ _ _ _ _ food market.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Trainghiem21-22/Lop9/quanhuyen/nghe/7.mp3", answer: "street", explain: "Street food: Đồ ăn đường phố.", translation: "từ mô tả thực phẩm được bán ngay trên vỉa hè hoặc các con phố" },
+            { id: 64, type: QuestionType.MC, text: "What time is the woman's appointment?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D2C13.mp3", options: ["Quarter to ten", "Quarter past ten", "Half past ten", "Ten o'clock"], answer: "Half past ten", explain: "Half past ten: 10:30.", translation: "giờ hẹn cụ thể vào lúc 10 giờ 30 phút sáng" },
+            { id: 66, type: QuestionType.MC, text: "His parents said that it would be not _____ for design graduates to find a job.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/65.mp3", options: ["difficult", "hard", "easy", "simple"], answer: "easy", explain: "Easy: Dễ dàng.", translation: "từ chỉ sự thuận lợi, suôn sẻ (nhưng ở đây là 'không thuận lợi')" },
+            { id: 67, type: QuestionType.MC, text: "Minh is _____ about the scholarship.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/91.mp3", options: ["proud", "happy", "sad", "worried"], answer: "happy", explain: "Happy: Vui mừng.", translation: "cảm xúc vô cùng phấn khởi khi đạt được thành tựu trong học tập" },
+            { id: 68, type: QuestionType.FIB, text: "Did you see the rice _ _ _ _ _ _ of Bali?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C2.mp3", answer: "fields", explain: "Fields: Cánh đồng.", translation: "những khoảng đất rộng lớn được dùng để trồng lúa tại Bali" },
+            { id: 69, type: QuestionType.MC, text: "Where is his hometown?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/44.mp3", options: ["Disney", "Sydney", "China", "Hanoi"], answer: "Sydney", explain: "Sydney: Thành phố ở Úc.", translation: "tên của thành phố cảng lớn nhất và nổi tiếng nhất ở nước Úc" },
+            { id: 70, type: QuestionType.FIB, text: "what _ _ _ _ _ _ _ I want to move to next.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C1.mp3", answer: "country", explain: "Country: Quốc gia.", translation: "một vùng lãnh thổ độc lập mà người nói đang muốn chuyển tới định cư" },
+            { id: 71, type: QuestionType.FIB, text: "Animal _ _ _ _ _ _ _ is causing most of the damage to the environment.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C21.mp3", answer: "farming", explain: "Farming: Chăn nuôi/Canh tác.", translation: "ngành sản xuất nông nghiệp liên quan đến việc nuôi dưỡng gia súc" },
+            { id: 74, type: QuestionType.MC, text: "Sydney's oldest univeristy was set up in ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/48.mp3", options: ["1870", "1950", "1850", "1860"], answer: "1850", explain: "Year: 1850.", translation: "mốc năm trong thế kỷ 19 đánh dấu sự ra đời của ngôi trường đại học" },
+            { id: 75, type: QuestionType.MC, text: "What is the man next to Helen wearing?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D1C25.mp3", options: ["He's wearing a coat.", "He's wearing trousers.", "He's wearing hat.", "He's wearing shorts."], answer: "He's wearing shorts.", explain: "Shorts: Quần soóc.", translation: "kiểu quần ngắn ngang đùi mà nam giới hay mặc khi đi dã ngoại" },
+            { id: 76, type: QuestionType.MC, text: "\"Did you come to the party last night?\" - \"Yes, but _____.\"", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/50.mp3", options: ["I saw you", "I didn't catch you", "You weren't there", "I didn't see you"], answer: "I didn't see you", explain: "Didn't see: Không nhìn thấy.", translation: "việc không bắt gặp hoặc không trông thấy một người nào đó tại buổi tiệc" },
+            { id: 77, type: QuestionType.MC, text: "The boy supposes it was a special ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/107.mp3", options: ["party", "day", "occasion", "relation"], answer: "occasion", explain: "Occasion: Dịp.", translation: "một sự kiện quan trọng hoặc một ngày có ý nghĩa đặc biệt nào đó" },
+            { id: 78, type: QuestionType.MC, text: "What time does Susan set off in the morning?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/56.mp3", options: ["5:30 a.m", "7 a.m", "5 a.m", "6 p.m"], answer: "5 a.m", explain: "5 a.m: Năm giờ sáng.", translation: "thời điểm trời còn rất sớm khi Susan bắt đầu hành trình của mình" },
+            { id: 79, type: QuestionType.MC, text: "How did the woman travel?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D2C28.mp3", options: ["She travelled by bike.", "She travelled by bus.", "She travelled by car.", "She travelled by train."], answer: "She travelled by train.", explain: "By train: Bằng tàu hỏa.", translation: "cách thức di chuyển đường dài bằng phương tiện chạy trên đường ray" },
+            { id: 81, type: QuestionType.MC, text: "It's also near Hoan Kiem Lake and ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/34.mp3", options: ["The Old Quarter", "Downtown", "The Modern City", "The Old Carter"], answer: "The Old Quarter", explain: "Old Quarter: Phố cổ.", translation: "khu vực trung tâm lịch sử lâu đời nổi tiếng với 36 phố phường ở Hà Nội" },
+            { id: 82, type: QuestionType.MC, text: "He's nearly seven now and it's wonderful watching him ____.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Trainghiem21-22/Lop9/quanhuyen/nghe/9.mp3", options: ["grow up", "grow rice", "grow apart", "grow trees"], answer: "grow up", explain: "Grow up: Lớn lên.", translation: "quá trình thay đổi và trở nên trưởng thành của một đứa trẻ theo thời gian" },
+            { id: 83, type: QuestionType.MC, text: "It's raining. Are they wearing _____?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/95.mp3", options: ["helmets", "coats", "trousers", "raincoats"], answer: "raincoats", explain: "Raincoats: Áo mưa.", translation: "những bộ trang phục không thấm nước để mặc khi ra đường lúc trời mưa" },
+            { id: 84, type: QuestionType.FIB, text: "_ _ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/heritage.mp3", answer: "heritage", explain: "Heritage: Di sản.", translation: "những báu vật hoặc giá trị văn hóa quý báu được tổ tiên truyền lại" },
+            { id: 85, type: QuestionType.FIB, text: "And we went to Central Park and we saw some _ _ _ _ _ _ _ around Central Park.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D3C2.mp3", answer: "museums", explain: "Museums: Bảo tàng.", translation: "các tòa nhà lưu giữ và trưng bày những tác phẩm nghệ thuật hoặc hiện vật lịch sử" },
+            { id: 87, type: QuestionType.FIB, text: "_ _ _ _ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/lighthouse.mp3", answer: "lighthouse", explain: "Lighthouse: Ngọn hải đăng.", translation: "ngọn tháp cao phát sáng giúp tàu thuyền xác định phương hướng trên biển" },
+            { id: 88, type: QuestionType.FIB, text: "_ _ _ _ _ _ _", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/sandals.mp3", answer: "sandals", explain: "Sandals: Dép quai hậu.", translation: "một loại giày hở ngón và hở gót có quai rất thoáng mát" },
+            { id: 90, type: QuestionType.MC, text: "What time has the meeting been rescheduled for?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D1C6.mp3", options: ["1 o'clock", "3 o'clock", "4 o'clock", "2 o'clock"], answer: "1 o'clock", explain: "1:00 p.m.", translation: "mốc thời gian một giờ trưa (giờ họp mới sau khi đã thay đổi lịch trình)" },
+            { id: 91, type: QuestionType.FIB, text: "The pollution must come from somewhere in the _ _ _ _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C26.mp3", answer: "forest", explain: "Forest: Khu rừng.", translation: "một vùng đất rộng lớn phủ đầy cây xanh và là nơi sinh sống của động vật" },
+            { id: 92, type: QuestionType.MC, text: "What animal did she have when she lived in China?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D3C16.mp3", options: ["A rabbit", "A dog", "A hamster", "A cat"], answer: "A rabbit", explain: "Rabbit: Con thỏ.", translation: "một loài vật gặm nhấm nhỏ có tai dài và rất thích ăn cà rốt" },
+            { id: 93, type: QuestionType.MC, text: "We shouldn't destroy _____ buildings.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/18.mp3", options: ["history", "historically", "historic", "historical"], answer: "historical", explain: "Historical: Thuộc về lịch sử.", translation: "từ dùng để mô tả những công trình kiến trúc gắn liền với các sự kiện trong quá khứ" },
+            { id: 95, type: QuestionType.FIB, text: "Their website is www._ _ _ _ _ _ _ _ _ _ .com", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/54.mp3", answer: "tourceylon", explain: "Website name.", translation: "tên của địa chỉ trang web du lịch mà bạn cần nghe được" },
+            { id: 96, type: QuestionType.FIB, text: "Melbourne is a great place to go to _ _ _ _ _ _ .", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE2023-2024/Chinhthuc/Capquan/Lop9/Nghe/D4C18.mp3", answer: "school", explain: "School: Trường học.", translation: "nơi mà học sinh đến hàng ngày để tiếp thu kiến thức và gặp gỡ thầy cô" },
+            { id: 97, type: QuestionType.MC, text: "What will Tuan prepare?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/25.mp3", options: ["quizzes", "papers", "lunch", "prizes"], answer: "quizzes", explain: "Quizzes: Bài kiểm tra ngắn/Câu đố.", translation: "những bài trắc nghiệm vui hoặc câu hỏi ngắn dùng để đố mọi người" },
+            { id: 98, type: QuestionType.FIB, text: "The party is in the _ _ _ _ _ _ _ _ Room.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/Thi_cac_cap/2021-2022/Lop9/capquan/37.mp3", answer: "penridge", explain: "Room name.", translation: "tên riêng của một căn phòng hội nghị nơi tổ chức sự kiện" },
+            { id: 99, type: QuestionType.MC, text: "How did people use to move around Bangkok?", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/58.mp3", options: ["by car", "by boat", "on foot", "by motorbike"], answer: "by boat", explain: "By boat: Bằng thuyền.", translation: "phương tiện di chuyển trên mặt nước rất phổ biến ở Bangkok ngày xưa" },
+            { id: 100, type: QuestionType.MC, text: "The sky train and _____ are limited in range, and don't cover the whole city.", audio: "https://cdn-s3.vtconline.vn/ioe-resource-02/filePublish/ioe/EOlympic/ExamData/IOE%202022-2023/Chinhthuc/Capquanhuyen/Lop9/AmThanh/59.mp3", options: ["public transport", "bicycle", "underground", "metro"], answer: "metro", explain: "Metro: Hệ thống tàu điện đô thị.", translation: "từ chỉ mạng lưới tàu điện hiện đại kết nối các khu vực trong thành phố" }
+        ];
+
+        // --- COMPONENTS ---
+
+        const AudioPlayer = ({ src, autoPlay }) => {
+            const audioRef = useRef(null);
+            const [isPlaying, setIsPlaying] = useState(false);
+
+            useEffect(() => {
+                if (autoPlay && audioRef.current) {
+                    audioRef.current.play().catch(() => {});
+                }
+            }, [src]);
+
+            const toggle = () => {
+                if (audioRef.current.paused) audioRef.current.play();
+                else audioRef.current.pause();
+            };
+
+            return (
+                <div className="flex items-center gap-4 bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 shadow-sm">
+                    <button onClick={toggle} className="w-12 h-12 flex items-center justify-center bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-all shadow-lg btn-active">
+                        {isPlaying ? 
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> : 
+                            <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        }
+                    </button>
+                    <div>
+                        <span className="text-sm font-black text-indigo-900 block uppercase tracking-wider">Audio Câu Hỏi</span>
+                        <span className="text-xs text-indigo-400 font-bold italic">Bấm để nghe âm thanh</span>
+                    </div>
+                    <audio ref={audioRef} src={src} onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} onEnded={() => setIsPlaying(false)} className="hidden" />
+                </div>
+            );
+        };
+
+        const QuestionGrid = ({ questions, userAnswers, currentIndex, onJump, onClose }) => {
+            const getStatusColor = (q, idx) => {
+                const ans = userAnswers.find(a => a.qId === q.id);
+                if (idx === currentIndex) return "ring-4 ring-indigo-500 border-indigo-500 text-indigo-700 bg-white shadow-lg";
+                if (!ans) return "bg-slate-100 text-slate-400 border-transparent hover:bg-slate-200";
+                return ans.isCorrect ? "bg-emerald-500 text-white border-emerald-600 shadow-md" : "bg-rose-500 text-white border-rose-600 shadow-md";
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+                        <div className="p-6 border-b flex justify-between items-center bg-slate-50">
+                            <div>
+                                <h2 className="text-xl font-black text-slate-800 tracking-tight">Danh Sách Câu Hỏi (100)</h2>
+                                <p className="text-sm text-slate-500 font-bold mt-1 uppercase tracking-widest">Đã làm: {userAnswers.length} / {questions.length}</p>
+                            </div>
+                            <button onClick={onClose} className="p-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-600 transition-all">
+                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                            <div className="grid grid-cols-5 sm:grid-cols-10 gap-3">
+                                {questions.map((q, idx) => (
+                                    <button 
+                                        key={q.id} 
+                                        onClick={() => { onJump(idx); onClose(); }} 
+                                        className={`h-10 w-10 rounded-lg font-black text-xs border-2 transition-all btn-active ${getStatusColor(q, idx)}`}
+                                    >
+                                        {idx + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const StartScreen = ({ onStart, name, setName }) => (
+            <div className="min-h-screen flex items-center justify-center bg-indigo-600 p-6">
+                <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-md w-full text-center animate-fade-in">
+                    <h1 className="text-3xl font-black text-slate-800 mb-2 tracking-tighter uppercase">LUYỆN NGHE IOE K9</h1>
+                    <p className="text-slate-400 mb-8 font-black text-xs tracking-widest uppercase italic">Bộ đề Cấp Huyện 100 Câu (Phiên bản Gợi ý chi tiết)</p>
+                    <input 
+                        type="text" 
+                        value={name}
+                        placeholder="Tên của bạn..." 
+                        className="w-full px-6 py-4 rounded-2xl border-4 border-slate-100 focus:border-indigo-500 outline-none mb-6 text-xl font-black shadow-sm" 
+                        onChange={e => setName(e.target.value)}
+                    />
+                    <button 
+                        onClick={() => name.trim() && onStart(name)} 
+                        className="w-full py-5 bg-indigo-600 text-white rounded-2xl text-xl font-black shadow-xl hover:bg-indigo-700 active:scale-95 transition-all"
+                    >
+                        BẮT ĐẦU CHƠI 🎯
+                    </button>
+                </div>
+            </div>
+        );
+
+        const ResultScreen = ({ userAnswers, totalQuestions, onRestart }) => {
+            const correctCount = userAnswers.filter(a => a.isCorrect).length;
+            const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
+
+            return (
+                <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center py-10 px-6">
+                    <div className="bg-white rounded-3xl shadow-2xl p-10 max-w-2xl w-full text-center animate-fade-in border-4 border-slate-50">
+                        <h2 className="text-3xl font-black text-slate-800 mb-8 tracking-tight uppercase">KẾT QUẢ CỦA BẠN</h2>
+                        <div className="text-6xl font-black text-indigo-600 mb-4">{scorePercentage}%</div>
+                        <div className="grid grid-cols-2 gap-4 mb-10">
+                            <div className="bg-emerald-50 p-6 rounded-2xl">
+                                <div className="text-4xl font-black text-emerald-600">{correctCount}</div>
+                                <div className="text-[10px] uppercase font-black text-emerald-400 mt-2 tracking-widest">Đúng</div>
+                            </div>
+                            <div className="bg-rose-50 p-6 rounded-2xl">
+                                <div className="text-4xl font-black text-rose-600">{totalQuestions - correctCount}</div>
+                                <div className="text-[10px] uppercase font-black text-rose-400 mt-2 tracking-widest">Sai hoặc Bỏ qua</div>
+                            </div>
+                        </div>
+                        <button onClick={onRestart} className="px-12 py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all text-xl tracking-tight">CHƠI LẠI TỪ ĐẦU</button>
+                    </div>
+                </div>
+            );
+        };
+
+        const QuizContainer = ({ 
+            userName, currentIndex, userAnswers, inputValue, setInputValue, 
+            showHint, setShowHint, handleAnswer, goNext, goPrev, jumpToQuestion 
+        }) => {
+            const [showGrid, setShowGrid] = useState(false);
+            const currentQ = QUIZ_DATA[currentIndex];
+            const currentAns = userAnswers.find(a => a.qId === currentQ.id);
+            const isDone = !!currentAns;
+
+            return (
+                <div className="min-h-screen bg-slate-100 flex flex-col items-center py-10 px-6 pb-40">
+                    <div className="w-full max-w-3xl flex justify-between items-center mb-6 bg-white p-4 rounded-2xl shadow-sm">
+                        <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Học viên</span>
+                            <span className="font-black text-slate-800 tracking-tight">{userName}</span>
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowGrid(true)} className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest">Danh sách</button>
+                            <div className="font-black text-indigo-600 px-4 py-2 bg-indigo-50 rounded-xl">
+                                {currentIndex + 1} / {QUIZ_DATA.length}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full max-w-3xl bg-white rounded-3xl shadow-xl p-8 sm:p-12 animate-fade-in border-4 border-white">
+                        <div className="flex justify-between items-center mb-8">
+                            <span className="px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-widest">STT: {currentIndex + 1}</span>
+                            {!isDone && (
+                                <button onClick={() => setShowHint(!showHint)} className="text-[10px] font-black uppercase text-amber-600 flex items-center gap-1">
+                                    {showHint ? "ẨN GỢI Ý" : "XEM GỢI Ý 💡"}
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="mb-10">
+                            <AudioPlayer src={currentQ.audio} autoPlay={true} />
+                        </div>
+
+                        {showHint && !isDone && (
+                            <div className="mb-10 bg-amber-50 p-6 rounded-[2rem] text-amber-900 border-4 border-amber-200 animate-fade-in shadow-inner">
+                                <p className="font-black text-[10px] uppercase mb-4 text-amber-600 tracking-widest underline decoration-amber-200 underline-offset-4">Gợi ý từ hệ thống:</p>
+                                <div className="space-y-3">
+                                    {currentQ.type === QuestionType.FIB && (
+                                        <>
+                                            <div className="flex items-center gap-3">
+                                                <span className="bg-amber-200 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-lg">📏</span>
+                                                <p className="font-black text-lg">Từ cần điền có <span className="text-indigo-600">{currentQ.answer.length}</span> ký tự.</p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="bg-amber-200 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-lg">🔤</span>
+                                                <p className="font-black text-lg">Ký tự đầu tiên: <span className="text-indigo-600 text-2xl uppercase underline underline-offset-4 decoration-indigo-200">"{currentQ.answer[0]}"</span></p>
+                                            </div>
+                                        </>
+                                    )}
+                                    <div className="flex items-start gap-3 border-t border-amber-200 pt-3 mt-3">
+                                        <span className="bg-indigo-100 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm text-lg">🇻🇳</span>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-indigo-400 uppercase tracking-tighter">Nghĩa chi tiết trong ngữ cảnh:</p>
+                                            <p className="font-black text-lg leading-tight text-indigo-800 italic uppercase">"{currentQ.translation || "Đang cập nhật"}"</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-12 leading-relaxed tracking-tight italic">"{currentQ.text}"</h2>
+
+                        {currentQ.type === QuestionType.MC && currentQ.options ? (
+                            <div className="grid grid-cols-1 gap-4">
+                                {currentQ.options.map((opt, i) => {
+                                    const isCorrect = opt === currentQ.answer;
+                                    const isSelected = currentAns?.userResponse === opt;
+                                    let style = "bg-white border-2 border-slate-100 text-slate-700 hover:border-indigo-500";
+                                    if (isDone) {
+                                        if (isCorrect) style = "bg-emerald-500 border-emerald-500 text-white shadow-lg";
+                                        else if (isSelected) style = "bg-rose-500 border-rose-500 text-white";
+                                        else style = "bg-white border-slate-50 text-slate-300 opacity-40";
+                                    }
+                                    return (
+                                        <button key={i} onClick={() => !isDone && handleAnswer(opt)} disabled={isDone} className={`p-6 rounded-2xl font-black text-xl transition-all text-left flex items-center gap-4 ${style}`}>
+                                            <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-slate-50 text-xs border border-slate-200">{String.fromCharCode(65+i)}</span>
+                                            {opt}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex gap-4">
+                                    <input type="text" value={isDone ? currentAns.userResponse : inputValue} onChange={e => setInputValue(e.target.value)} disabled={isDone} autoFocus placeholder="Gõ chính xác từ nghe được..." className={`flex-1 p-6 rounded-2xl border-4 font-black text-2xl outline-none transition-all ${isDone ? (currentAns.isCorrect ? "bg-emerald-50 border-emerald-500 text-emerald-800" : "bg-rose-50 border-rose-500 text-rose-800") : "bg-slate-50 border-slate-100 focus:border-indigo-500"}`} />
+                                    {!isDone && (
+                                        <button onClick={() => inputValue.trim() && handleAnswer(inputValue)} className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all text-lg">NỘP BÀI</button>
+                                    )}
+                                </div>
+                                {!isDone && <p className="text-[10px] text-slate-400 font-black uppercase text-center">Nhấn phím ENTER để nộp bài nhanh chóng</p>}
+                            </div>
+                        )}
+
+                        {isDone && (
+                            <div className={`mt-10 p-8 rounded-3xl border-l-8 animate-fade-in ${currentAns.isCorrect ? 'bg-emerald-50 border-emerald-500 text-emerald-900' : 'bg-rose-50 border-rose-500 text-rose-900'}`}>
+                                <h4 className="font-black text-2xl mb-2 tracking-tight">{currentAns.isCorrect ? "CHÍNH XÁC!" : "CHƯA ĐÚNG RỒI!"}</h4>
+                                {!currentAns.isCorrect && (
+                                    <div className="mb-3">
+                                        <span className="text-[10px] font-black uppercase text-rose-400 block mb-1">Đáp án đúng:</span>
+                                        <span className="font-black text-3xl text-rose-600 uppercase underline-offset-4 answer-underline">{currentQ.answer}</span>
+                                    </div>
+                                )}
+                                <p className="font-bold opacity-75 italic">"{currentQ.explain}"</p>
+                                <p className="mt-4 text-[10px] font-black uppercase opacity-50">Bấm phím ENTER để qua câu tiếp theo →</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-6 z-40">
+                        <div className="max-w-3xl mx-auto flex justify-between gap-4">
+                            <button onClick={goPrev} disabled={currentIndex === 0} className="px-8 py-4 bg-white border-2 border-slate-100 rounded-xl font-black text-slate-300 hover:text-indigo-600 hover:border-indigo-600 disabled:opacity-30 transition-all">← CÂU TRƯỚC</button>
+                            <button onClick={goNext} disabled={!isDone} className={`flex-1 py-4 rounded-xl font-black text-xl transition-all ${isDone ? "bg-indigo-600 text-white shadow-xl hover:bg-indigo-700" : "bg-slate-100 text-slate-300"}`}>
+                                {currentIndex === QUIZ_DATA.length - 1 ? "XEM KẾT QUẢ 🎉" : "CÂU TIẾP THEO →"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {showGrid && (
+                        <QuestionGrid questions={QUIZ_DATA} userAnswers={userAnswers} currentIndex={currentIndex} onJump={jumpToQuestion} onClose={() => setShowGrid(false)} />
+                    )}
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [gameState, setGameState] = useState('START');
+            const [userName, setUserName] = useState('');
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [userAnswers, setUserAnswers] = useState([]);
+            const [inputValue, setInputValue] = useState('');
+            const [showHint, setShowHint] = useState(false);
+
+            const startQuiz = (name) => {
+                setUserName(name);
+                setGameState('PLAYING');
+                setCurrentIndex(0);
+                setUserAnswers([]);
+                setInputValue('');
+                setShowHint(false);
+            };
+
+            const normalizeStr = (s) => s.trim().toLowerCase().replace(/[.,!?;:'"]/g, '').replace(/\s+/g, ' ');
+
+            const handleAnswer = useCallback((val) => {
+                if (!val.trim()) return;
+                const current = QUIZ_DATA[currentIndex];
+                const isCorrect = normalizeStr(val) === normalizeStr(current.answer);
+                
+                const newAns = { qId: current.id, userResponse: val, isCorrect };
+                setUserAnswers(prev => [...prev.filter(a => a.qId !== current.id), newAns]);
+            }, [currentIndex]);
+
+            const goNext = useCallback(() => {
+                if (currentIndex < QUIZ_DATA.length - 1) {
+                    const nextIdx = currentIndex + 1;
+                    setCurrentIndex(nextIdx);
+                    const existing = userAnswers.find(a => a.qId === QUIZ_DATA[nextIdx].id);
+                    setInputValue(existing ? existing.userResponse : '');
+                    setShowHint(false);
+                } else {
+                    setGameState('RESULT');
+                }
+            }, [currentIndex, userAnswers]);
+
+            const goPrev = useCallback(() => {
+                if (currentIndex > 0) {
+                    const prevIdx = currentIndex - 1;
+                    setCurrentIndex(prevIdx);
+                    const existing = userAnswers.find(a => a.qId === QUIZ_DATA[prevIdx].id);
+                    setInputValue(existing ? existing.userResponse : '');
+                    setShowHint(false);
+                }
+            }, [currentIndex, userAnswers]);
+
+            const jumpToQuestion = (idx) => {
+                setCurrentIndex(idx);
+                const existing = userAnswers.find(a => a.qId === QUIZ_DATA[idx].id);
+                setInputValue(existing ? existing.userResponse : '');
+                setShowHint(false);
+            };
+
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if (e.key === 'Enter' && gameState === 'PLAYING') {
+                        const current = QUIZ_DATA[currentIndex];
+                        const answered = userAnswers.find(a => a.qId === current.id);
+                        if (answered) goNext();
+                        else if (inputValue.trim()) handleAnswer(inputValue);
+                    }
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [gameState, currentIndex, userAnswers, inputValue, handleAnswer, goNext]);
+
+            return (
+                <div className="min-h-screen">
+                    {gameState === 'START' && <StartScreen onStart={startQuiz} name={userName} setName={setUserName} />}
+                    {gameState === 'PLAYING' && (
+                        <QuizContainer 
+                            userName={userName} currentIndex={currentIndex} userAnswers={userAnswers}
+                            inputValue={inputValue} setInputValue={setInputValue} showHint={showHint} setShowHint={setShowHint}
+                            handleAnswer={handleAnswer} goNext={goNext} goPrev={goPrev} jumpToQuestion={jumpToQuestion}
+                        />
+                    )}
+                    {gameState === 'RESULT' && <ResultScreen userAnswers={userAnswers} totalQuestions={QUIZ_DATA.length} onRestart={() => window.location.reload()} />}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
